@@ -17,3 +17,7 @@ DataNodeId.__doc__ = """Type that holds a `DataNode^` identifier."""
 Edit = NewType("Edit", Dict[str, Any])
 """Type that holds a `DataNode^` edit information."""
 Edit.__doc__ = """Type that holds a `DataNode^` edit information."""
+EDIT_TIMESTAMP_KEY = "timestamp"
+EDIT_JOB_ID_KEY = "job_id"
+EDIT_COMMENT_KEY = "comment"
+EDIT_EDITOR_ID_KEY = "editor_id"

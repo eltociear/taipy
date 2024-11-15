@@ -20,7 +20,6 @@ from taipy.common.config.common.scope import Scope
 
 from .._entity._reload import _Reloader
 from .._version._version_manager_factory import _VersionManagerFactory
-from ..job.job_id import JobId
 from ._file_datanode_mixin import _FileDataNodeMixin
 from ._tabular_datanode_mixin import _TabularDataNodeMixin
 from .data_node import DataNode
@@ -116,16 +115,16 @@ class CSVDataNode(DataNode, _FileDataNodeMixin, _TabularDataNodeMixin):
     def storage_type(cls) -> str:
         return cls.__STORAGE_TYPE
 
-    def write_with_column_names(self, data: Any, columns: Optional[List[str]] = None, job_id: Optional[JobId] = None):
+    def write_with_column_names(self, data: Any, columns: Optional[List[str]] = None, editor_id: Optional[str] = None):
         """Write a selection of columns.
 
         Arguments:
             data (Any): The data to write.
             columns (Optional[List[str]]): The list of column names to write.
-            job_id (JobId): An optional identifier of the writer.
+            editor_id (str): An optional identifier of the writer.
         """
         self._write(data, columns)
-        self.track_edit(timestamp=datetime.now(), job_id=job_id)
+        self.track_edit(editor_id=editor_id, timestamp=datetime.now())
 
     def _read(self):
         return self._read_from_path()

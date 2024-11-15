@@ -21,7 +21,6 @@ from taipy.common.config.common.scope import Scope
 from .._entity._reload import _Reloader
 from .._version._version_manager_factory import _VersionManagerFactory
 from ..exceptions.exceptions import UnknownCompressionAlgorithm, UnknownParquetEngine
-from ..job.job_id import JobId
 from ._file_datanode_mixin import _FileDataNodeMixin
 from ._tabular_datanode_mixin import _TabularDataNodeMixin
 from .data_node import DataNode
@@ -163,14 +162,14 @@ class ParquetDataNode(DataNode, _FileDataNodeMixin, _TabularDataNodeMixin):
         """Return the storage type of the data node: "parquet"."""
         return cls.__STORAGE_TYPE
 
-    def _write_with_kwargs(self, data: Any, job_id: Optional[JobId] = None, **write_kwargs):
+    def _write_with_kwargs(self, data: Any, editor_id: Optional[str] = None, **write_kwargs):
         """Write the data referenced by this data node.
 
         Keyword arguments here which are also present in the Data Node config will overwrite them.
 
         Arguments:
             data (Any): The data to write.
-            job_id (JobId): An optional identifier of the writer.
+            editor_id (str): An optional identifier of the writer.
             **write_kwargs (dict[str, any]): The keyword arguments passed to the function
                 `pandas.DataFrame.to_parquet()`.
         """
@@ -189,7 +188,7 @@ class ParquetDataNode(DataNode, _FileDataNodeMixin, _TabularDataNodeMixin):
         # Ensure that the columns are strings, otherwise writing will fail with pandas 1.3.5
         df.columns = df.columns.astype(str)
         df.to_parquet(self._path, **kwargs)
-        self.track_edit(timestamp=datetime.now(), job_id=job_id)
+        self.track_edit(timestamp=datetime.now(), editor_id=editor_id)
 
     def read_with_kwargs(self, **read_kwargs):
         """Read data from this data node.

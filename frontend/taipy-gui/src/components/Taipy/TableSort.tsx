@@ -37,6 +37,8 @@ export interface SortDesc {
 }
 
 interface TableSortProps {
+    fieldHeader?: string;
+    fieldHeaderTooltip?: string;
     columns: Record<string, ColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<SortDesc>) => void;
@@ -47,6 +49,8 @@ interface TableSortProps {
 interface SortRowProps {
     idx: number;
     sort?: SortDesc;
+    fieldHeader?: string;
+    fieldHeaderTooltip?: string;
     columns: Record<string, ColumnDesc>;
     colsOrder: Array<string>;
     setSort: (idx: number, fd: SortDesc, remove?: boolean) => void;
@@ -72,13 +76,13 @@ const orderCaptionSx = { ml: 1 };
 const getSortDesc = (columns: Record<string, ColumnDesc>, colId?: string, asc?: boolean) =>
     colId && asc !== undefined
         ? ({
-              col: columns[colId].dfid,
-              order: !!asc,
-          } as SortDesc)
+            col: columns[colId].dfid,
+            order: !!asc,
+        } as SortDesc)
         : undefined;
 
 const SortRow = (props: SortRowProps) => {
-    const { idx, setSort, columns, colsOrder, sort, appliedSorts } = props;
+    const { idx, sort, setSort, fieldHeader, fieldHeaderTooltip, columns, colsOrder, appliedSorts } = props;
 
     const [colId, setColId] = useState("");
     const [order, setOrder] = useState(true); // true => asc
@@ -133,13 +137,15 @@ const SortRow = (props: SortRowProps) => {
             <Grid size={6}>
                 <FormControl margin="dense">
                     <InputLabel>Column</InputLabel>
-                    <Select value={colId || ""} onChange={onColSelect} input={<OutlinedInput label="Column" />}>
-                        {cols.map((col) => (
-                            <MenuItem key={col} value={col}>
-                                {columns[col].title || columns[col].dfid}
-                            </MenuItem>
-                        ))}
-                    </Select>
+                    <Tooltip title={fieldHeaderTooltip} placement="top">
+                        <Select value={colId || ""} onChange={onColSelect} input={<OutlinedInput label={fieldHeader} />}>
+                            {cols.map((col) => (
+                                <MenuItem key={col} value={col}>
+                                    {columns[col].title || columns[col].dfid}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Tooltip>
                 </FormControl>
             </Grid>
             <Grid size={4}>
@@ -171,7 +177,14 @@ const SortRow = (props: SortRowProps) => {
 };
 
 const TableSort = (props: TableSortProps) => {
-    const { onValidate, appliedSorts, columns, className = "" } = props;
+    const {
+        fieldHeader = "Column",
+        fieldHeaderTooltip = "Select the column to sort",
+        columns,
+        onValidate,
+        appliedSorts,
+        className = ""
+    } = props;
 
     const [showSort, setShowSort] = useState(false);
     const sortRef = useRef<HTMLButtonElement | null>(null);
@@ -207,7 +220,7 @@ const TableSort = (props: TableSortProps) => {
             });
         },
         [onValidate]
-        );
+    );
 
     useEffect(() => {
         columns &&
@@ -243,6 +256,8 @@ const TableSort = (props: TableSortProps) => {
                             key={"fd" + idx}
                             idx={idx}
                             sort={sd}
+                            fieldHeader={fieldHeader}
+                            fieldHeaderTooltip={fieldHeaderTooltip}
                             columns={columns}
                             colsOrder={colsOrder}
                             setSort={updateSort}
@@ -251,6 +266,8 @@ const TableSort = (props: TableSortProps) => {
                     ))}
                     <SortRow
                         idx={-(sorts.length + 1)}
+                        fieldHeader={fieldHeader}
+                        fieldHeaderTooltip={fieldHeaderTooltip}
                         columns={columns}
                         colsOrder={colsOrder}
                         setSort={updateSort}

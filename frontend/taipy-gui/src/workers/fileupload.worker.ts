@@ -23,6 +23,7 @@ const uploadFile = (
     part: number,
     total: number,
     fileName: string,
+    filePath: string,
     multiple: boolean,
     id: string,
     progressCb: (uploaded: number) => void
@@ -40,6 +41,7 @@ const uploadFile = (
     onAction && fdata.append("on_action", onAction);
     uploadData && fdata.append("upload_data", uploadData);
     fdata.append("multiple", multiple ? "True" : "False");
+    fdata.append("path", filePath)
     xhr.send(fdata);
 };
 
@@ -90,6 +92,7 @@ const process = (
                     Math.floor(start / BYTES_PER_CHUNK),
                     tot,
                     blob.name,
+                    blob.webkitRelativePath,
                     i == 0 ? false : files.length > 0,
                     id,
                     progressCallback

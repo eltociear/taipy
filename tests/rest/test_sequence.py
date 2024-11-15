@@ -36,8 +36,9 @@ def test_delete_sequence(client):
     rep = client.get(user_url)
     assert rep.status_code == 404
 
-    with mock.patch("taipy.core.sequence._sequence_manager._SequenceManager._delete"), mock.patch(
-        "taipy.core.sequence._sequence_manager._SequenceManager._get"
+    with (
+        mock.patch("taipy.core.sequence._sequence_manager._SequenceManager._delete"),
+        mock.patch("taipy.core.sequence._sequence_manager._SequenceManager._get"),
     ):
         # test get_sequence
         rep = client.delete(url_for("api.sequence_by_id", sequence_id="foo"))
@@ -73,7 +74,7 @@ def test_get_all_sequences(client, default_scenario_config_list):
     for ds in range(10):
         with mock.patch("taipy.rest.api.resources.scenario.ScenarioList.fetch_config") as config_mock:
             config_mock.return_value = default_scenario_config_list[ds]
-            scenario_url = url_for("api.scenarios", config_id=config_mock.name)
+            scenario_url = url_for("api.scenarios", config_id=default_scenario_config_list[ds].name)
             client.post(scenario_url)
 
     sequences_url = url_for("api.sequences")

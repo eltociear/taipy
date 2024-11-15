@@ -33,7 +33,7 @@ body:
     attributes:
       label: "Steps to Reproduce Issue"
       description: If possible, please share the steps to reproduce the issue.
-      value: |
+      placeholder: |
         1. A code fragment
         2. And/or configuration files or code
         3. And/or Taipy GUI Markdown or HTML files
@@ -50,8 +50,7 @@ body:
     attributes:
       label: "Screenshots"
       description: If applicable, add screenshots to help explain your problem.
-      value: |
-        ![DESCRIPTION](LINK.png)
+      placeholder: ![DESCRIPTION](LINK.png)
     validations:
       required: false
 

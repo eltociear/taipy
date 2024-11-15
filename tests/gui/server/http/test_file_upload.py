@@ -11,6 +11,7 @@
 
 import inspect
 import io
+import os
 import pathlib
 import tempfile
 
@@ -124,3 +125,22 @@ def test_file_upload_multiple(gui: Gui, helpers):
     assert created_file.exists()
     value = getattr(gui._bindings()._get_all_scopes()[sid], var_name)
     assert len(value) == 2
+
+
+def test_file_upload_folder(gui: Gui, helpers):
+    gui._set_frame(inspect.currentframe())
+    gui.run(run_server=False, single_client=True)
+    flask_client = gui._server.test_client()
+
+    sid = _DataScopes._GLOBAL_ID
+    files = [(io.BytesIO(b"(^~^)"), "cutey.txt"), (io.BytesIO(b"(^~^)"), "cute_nested.txt")]
+    folders = [ ["folder"], ["folder", "nested"] ]
+    for file, folder in zip(files, folders):
+        path = os.path.join(*folder, file[1])
+        response = flask_client.post(
+            f"/taipy-uploads?client_id={sid}",
+            data={"var_name": "cute_varname", "blob": file, "path": path},
+            content_type="multipart/form-data"
+        )
+        assert response.status_code == 200
+        assert os.path.isfile( os.path.join( gui._get_config("upload_folder", tempfile.gettempdir()), path) )

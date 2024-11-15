@@ -33,6 +33,15 @@ class ExampleLibrary(ElementLibrary):
                 # element, exported as ExampleLabel in front-end/src/index.ts
                 react_component="ExampleLabel",
             ),
+            "game_table": Element(
+                "data",
+                {
+                    "data": ElementProperty(PropertyType.data),
+                },
+                # The name of the React component (GameTable) that implements this custom
+                # element, exported as GameTable in front-end/src/index.ts
+                # react_component="GameTable",
+            ),
         }
 
     # The implementation of the rendering for the "fraction" static element

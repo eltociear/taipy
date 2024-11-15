@@ -23,7 +23,7 @@
                     {
                         "name": "mode",
                         "type": "str",
-                        "doc": "Define the way the text is processed:\n<ul><li>&quot;raw&quot;: synonym for setting the <i>raw</i> property to True</li><li>&quot;pre&quot;: keeps spaces and new lines</li><li>&quot;markdown&quot; or &quot;md&quot;: basic support for Markdown."
+                        "doc": "Define the way the text is processed:\n<ul><li>&quot;raw&quot;: synonym for setting the <i>raw</i> property to True</li><li>&quot;pre&quot;: keeps spaces and new lines</li><li>&quot;markdown&quot; or &quot;md&quot;: basic support for Markdown</li><li>&quot;latex&quot;: LaTe&chi; support</li>"
                     },
                     {
                         "name": "format",
@@ -274,12 +274,6 @@
                         "type": "bool",
                         "default_value": "False",
                         "doc": "If set, this allows de-selection and the value is set to unselected_value."
-                    },
-                    {
-                        "name": "unselected_value",
-                        "type": "Any",
-                        "default_value": "None",
-                        "doc": "Value assigned to <i>value</i> when no item is selected."
                     },
                     {
                         "name": "mode",
@@ -1228,6 +1222,12 @@
                         "doc": "If set to True, multiple files can be uploaded."
                     },
                     {
+                        "name": "selection_type",
+                        "type": "str",
+                        "default_value": "\"file\"",
+                        "doc": "Can be set to \"file\" (with \"f\", \"\" aliases) or \"directory\" (with \"d\", \"dir\", \"folder\" aliases) to upload the respective element with preserved inner structure."
+                    },
+                    {
                         "name": "extensions",
                         "type": "str",
                         "default_value": "\".csv,.xlsx\"",
@@ -1452,7 +1452,7 @@
                         "type": "dynamic(str)",
                         "doc": "The title of the progress indicator."
                     },
-                                        {
+                    {
                         "name": "title_anchor",
                         "type": "str",
                         "default_value": "\"bottom\"",
@@ -1548,38 +1548,9 @@
                         "doc": "The list of menu option values."
                     },
                     {
-                        "name": "adapter",
-                        "type": "Union[str, Callable]",
-                        "default_value": "<tt>lambda x: str(x)</tt>",
-                        "doc": "A function or the name of the function that transforms an element of <i>lov</i> into a <i>tuple(id:str, label:Union[str,Icon])</i>.<br/>The default value is a function that returns the string representation of the <i>lov</i> element."
-                    },
-                    {
-                        "name": "type",
-                        "type": "str",
-                        "default_value": "<i>Type name of the first lov element</i>",
-                        "doc": "This property is required if <i>lov</i> contains a non-specific type of data (e.g., a dictionary).<br/>Then:<ul><li><i>value</i> must be of that type</li><li><i>lov</i> must be an iterable containing elements of this type</li><li>The function set to <i>adapter</i> will receive an object of this type.</li></ul><br/>The default value is the type of the first element in <i>lov</i>."
-                    },
-                    {
                         "name": "label",
                         "type": "str",
                         "doc": "The title of the menu."
-                    },
-                    {
-                        "name": "inactive_ids",
-                        "type": "dynamic(Union[str,list[str]])",
-                        "doc": "Semicolon (';')-separated list or a list of menu items identifiers that are disabled."
-                    },
-                    {
-                        "name": "width",
-                        "type": "str",
-                        "default_value": "\"15vw\"",
-                        "doc": "The width of the menu when unfolded, in CSS units.<br/>Note that when running on a mobile device, the property <i>width[active]</i> is used instead."
-                    },
-                    {
-                        "name": "width[mobile]",
-                        "type": "str",
-                        "default_value": "\"85vw\"",
-                        "doc": "The width of the menu when unfolded, in CSS units, when running on a mobile device."
                     },
                     {
                         "name": "on_action",
@@ -1599,6 +1570,40 @@
                                 "dict"
                             ]
                         ]
+                    },
+                    {
+                        "name": "selected",
+                        "type": "dynamic(list[str])",
+                        "doc": "Semicolon (';')-separated list or a list of menu items identifiers that should be selected."
+                    },
+                    {
+                        "name": "inactive_ids",
+                        "type": "dynamic(Union[str,list[str]])",
+                        "doc": "Semicolon (';')-separated list or a list of menu items identifiers that are disabled."
+                    },
+                    {
+                        "name": "adapter",
+                        "type": "Union[str, Callable]",
+                        "default_value": "<tt>lambda x: str(x)</tt>",
+                        "doc": "A function or the name of the function that transforms an element of <i>lov</i> into a <i>tuple(id:str, label:Union[str,Icon])</i>.<br/>The default value is a function that returns the string representation of the <i>lov</i> element."
+                    },
+                    {
+                        "name": "type",
+                        "type": "str",
+                        "default_value": "<i>Type name of the first lov element</i>",
+                        "doc": "This property is required if <i>lov</i> contains a non-specific type of data (e.g., a dictionary).<br/>Then:<ul><li><i>value</i> must be of that type</li><li><i>lov</i> must be an iterable containing elements of this type</li><li>The function set to <i>adapter</i> will receive an object of this type.</li></ul><br/>The default value is the type of the first element in <i>lov</i>."
+                    },
+                    {
+                        "name": "width",
+                        "type": "str",
+                        "default_value": "\"15vw\"",
+                        "doc": "The width of the menu when unfolded, in CSS units.<br/>Note that when running on a mobile device, the property <i>width[active]</i> is used instead."
+                    },
+                    {
+                        "name": "width[mobile]",
+                        "type": "str",
+                        "default_value": "\"85vw\"",
+                        "doc": "The width of the menu when unfolded, in CSS units, when running on a mobile device."
                     }
                 ]
             }
@@ -1616,6 +1621,39 @@
                         "default_property": true,
                         "type": "dict[str, Any]",
                         "doc": "The list of pages. The keys should be:\n<ul>\n<li>page id (start with \"/\")</li><li>or full URL</li></ul>\nThe values are labels. See the <a href=\"../../../../../userman/gui/binding/#list-of-values\">section on List of Values</a> for more details."
+                    }
+                ]
+            }
+        ],
+        [
+            "alert",
+            {
+                "inherits": ["shared"],
+                "properties": [
+                    {
+                        "name": "message",
+                        "default_property": true,
+                        "type": "dynamic(str)",
+                        "default_value": "\"\"",
+                        "doc": "The message displayed in the notification. Can be a dynamic string."
+                    },
+                    {
+                        "name": "severity",
+                        "type": "dynamic(str)",
+                        "default_value": "\"error\"",
+                        "doc": "The severity level of the alert. Valid values: \"error\", \"warning\", \"info\", \"success\".\nThe default is \"error\"."
+                    },
+                    {
+                        "name": "variant",
+                        "type": "dynamic(str)",
+                        "default_value": "\"filled\"",
+                        "doc": "The variant of the alert. Valid values: \"filled\", \"outlined\".\nThe default is \"filled\"."
+                    },
+                    {
+                        "name": "render",
+                        "type": "dynamic(bool)",
+                        "default_value": "True",
+                        "doc": "If False, the alert is hidden."
                     }
                 ]
             }
@@ -1696,7 +1734,7 @@
                         "default_property": true,
                         "required": true,
                         "type": "dynamic(list[str])",
-                        "doc": "The list of messages. Each item of this list must consist of a list of three strings: a message identifier, a message content, and a user identifier."
+                        "doc": "The list of messages. Each item of this list must consist of a list of three strings: a message identifier, a message content, a user identifier, and an image URL."
                     },
                     {
                         "name": "users",
@@ -1756,6 +1794,12 @@
                         "type": "str",
                         "default_value": "\"markdown\"",
                         "doc": "Define the way the messages are processed when they are displayed:\n<ul><li>&quot;raw&quot; no processing</li><li>&quot;pre&quot;: keeps spaces and new lines</li><li>&quot;markdown&quot; or &quot;md&quot;: basic support for Markdown.</li></ul>"
+                    },
+                    {
+                        "name": "max_file_size",
+                        "type": "int",
+                        "default_value": "1024 * 1024",
+                        "doc": "The maximum allowable file size, in bytes, for files uploaded to a chat message.\nThe default is 1 MB."
                     }
                 ]
             }

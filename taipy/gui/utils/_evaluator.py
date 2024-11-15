@@ -47,6 +47,7 @@ class _Evaluator:
     __EXPR_EDGE_CASE_F_STRING = re.compile(r"[\{]*[a-zA-Z_][a-zA-Z0-9_]*:.+")
     __IS_TAIPY_EXPR_RE = re.compile(r"TpExPr_(.*)")
     __IS_ARRAY_EXPR_RE = re.compile(r"[^[]*\[(\d+)][^]]*")
+    __CLEAN_LAMBDA_RE = re.compile(r"^__lambda_[\d_]+(TPMDL_\d+)?(.*)$")
 
     def __init__(self, default_bindings: t.Dict[str, t.Any], shared_variable: t.List[str]) -> None:
         # key = expression, value = hashed value of the expression
@@ -255,12 +256,19 @@ class _Evaluator:
             # evaluate expressions
             ctx: t.Dict[str, t.Any] = {}
             ctx.update(self.__global_ctx)
+            if lambda_expr:
+                ctx.update(gui._get_locals_bind())
             # entries in var_val are not always seen (NameError) when passed as locals
             ctx.update(var_val)
             with gui._get_authorization():
                 expr_evaluated = eval(not_encoded_expr if is_edge_case else expr_string, ctx)
         except Exception as e:
-            _warn(f"Cannot evaluate expression '{not_encoded_expr if is_edge_case else expr_string}'", e)
+            exception_str = not_encoded_expr if is_edge_case else expr_string
+            _warn(
+                f"Cannot evaluate expression '{_Evaluator._clean_exception_expr(exception_str)}'",
+                e,
+                always_show=True,
+            )
             expr_evaluated = None
         if lambda_expr and callable(expr_evaluated):
             expr_hash = _get_lambda_id(expr_evaluated, module=module_name)  # type: ignore[reportArgumentType]
@@ -291,7 +299,7 @@ class _Evaluator:
             if holder is not None:
                 holder.set(expr_evaluated)
         except Exception as e:
-            _warn(f"Exception raised evaluating {expr_string}", e)
+            _warn(f"Exception raised evaluating {_Evaluator._clean_exception_expr(expr_string)}", e)
 
     def re_evaluate_expr(self, gui: Gui, var_name: str) -> t.Set[str]:  # noqa C901
         """
@@ -366,7 +374,7 @@ class _Evaluator:
                         expr_evaluated = eval(expr_string, ctx)
                         _setscopeattr(gui, hash_expr, expr_evaluated)
                     except Exception as e:
-                        _warn(f"Exception raised evaluating {expr_string}", e)
+                        _warn(f"Exception raised evaluating {_Evaluator._clean_exception_expr(expr_string)}", e)
             # refresh holders if any
             for h in self.__expr_to_holders.get(expr, []):
                 holder_hash = self.__get_holder_hash(h, self.get_hash_from_expr(expr))
@@ -378,3 +386,7 @@ class _Evaluator:
 
     def _get_instance_in_context(self, name: str):
         return self.__global_ctx.get(name)
+
+    @staticmethod
+    def _clean_exception_expr(expr: str):
+        return _Evaluator.__CLEAN_LAMBDA_RE.sub(r"<lambda>\2", expr)

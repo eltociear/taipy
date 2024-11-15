@@ -52,6 +52,7 @@ from taipy.core import delete as core_delete
 from taipy.core import get as core_get
 from taipy.core import submit as core_submit
 from taipy.core.data._file_datanode_mixin import _FileDataNodeMixin
+from taipy.core.data.data_node_id import EDIT_COMMENT_KEY, EDIT_EDITOR_ID_KEY, EDIT_JOB_ID_KEY, EDIT_TIMESTAMP_KEY
 from taipy.core.notification import CoreEventConsumerBase, EventEntityType
 from taipy.core.notification.event import Event, EventOperation
 from taipy.core.notification.notifier import Notifier
@@ -284,10 +285,18 @@ class _GuiCoreContext(CoreEventConsumerBase):
         return None
 
     def filter_entities(
-        self, cycle_scenario: t.List, col: str, col_type: str, is_dn: bool, action: str, val: t.Any, col_fn=None
+        self,
+        cycle_scenario: t.List,
+        col: str,
+        col_type: str,
+        is_dn: bool,
+        action: str,
+        val: t.Any,
+        col_fn=None,
+        match_case: bool = False,
     ):
         cycle_scenario[2] = [
-            e for e in cycle_scenario[2] if _invoke_action(e, col, col_type, is_dn, action, val, col_fn)
+            e for e in cycle_scenario[2] if _invoke_action(e, col, col_type, is_dn, action, val, col_fn, match_case)
         ]
         return cycle_scenario
 
@@ -326,6 +335,7 @@ class _GuiCoreContext(CoreEventConsumerBase):
             col_fn = cp[0] if (cp := col.split("(")) and len(cp) > 1 else None
             val = fd.get("value")
             action = fd.get("action", "")
+            match_case = fd.get("matchCase", False) is not False
             customs = CustomScenarioFilter._get_custom(col)
             if customs:
                 with self.gui._set_locals_context(customs[0] or None):
@@ -344,14 +354,14 @@ class _GuiCoreContext(CoreEventConsumerBase):
                 e
                 for e in filtered_list
                 if not isinstance(e, Scenario)
-                or _invoke_action(e, t.cast(str, col), col_type, is_datanode_prop, action, val, col_fn)
+                or _invoke_action(e, t.cast(str, col), col_type, is_datanode_prop, action, val, col_fn, match_case)
             ]
             # level 2 filtering
             filtered_list = [
                 e
                 if isinstance(e, Scenario)
                 else self.filter_entities(
-                    t.cast(list, e), t.cast(str, col), col_type, is_datanode_prop, action, val, col_fn
+                    t.cast(list, e), t.cast(str, col), col_type, is_datanode_prop, action, val, col_fn, match_case
                 )
                 for e in filtered_list
             ]
@@ -516,7 +526,11 @@ class _GuiCoreContext(CoreEventConsumerBase):
             finally:
                 self.scenario_refresh(scenario_id)
                 if (scenario or user_scenario) and (sel_scenario_var := args[1] if isinstance(args[1], str) else None):
-                    self.gui._update_var(sel_scenario_var, scenario or user_scenario, on_change=args[2])
+                    self.gui._update_var(
+                        sel_scenario_var[6:] if sel_scenario_var.startswith("_TpLv_") else sel_scenario_var,
+                        scenario or user_scenario,
+                        on_change=args[2],
+                    )
         if scenario:
             if not (reason := is_editable(scenario)):
                 state.assign(error_var, f"Scenario {scenario_id or name} is not editable: {_get_reason(reason)}.")
@@ -645,6 +659,7 @@ class _GuiCoreContext(CoreEventConsumerBase):
             col_fn = cp[0] if (cp := col.split("(")) and len(cp) > 1 else None
             val = fd.get("value")
             action = fd.get("action", "")
+            match_case = fd.get("matchCase", False) is not False
             customs = CustomScenarioFilter._get_custom(col)
             if customs:
                 with self.gui._set_locals_context(customs[0] or None):
@@ -662,15 +677,17 @@ class _GuiCoreContext(CoreEventConsumerBase):
                 e
                 for e in filtered_list
                 if not isinstance(e, DataNode)
-                or _invoke_action(e, t.cast(str, col), col_type, False, action, val, col_fn)
+                or _invoke_action(e, t.cast(str, col), col_type, False, action, val, col_fn, match_case)
             ]
             # level 3 filtering
             filtered_list = [
                 e
                 if isinstance(e, DataNode)
-                else self.filter_entities(d, t.cast(str, col), col_type, False, action, val, col_fn)
+                else self.filter_entities(
+                    t.cast(list, d), t.cast(str, col), col_type, False, action, val, col_fn, match_case
+                )
                 for e in filtered_list
-                for d in t.cast(list, t.cast(list, e)[2])
+                for d in (t.cast(list, t.cast(list, e)[2]) if isinstance(e, list) else [e])
             ]
         # remove empty cycles
         return [e for e in filtered_list if isinstance(e, DataNode) or (isinstance(e, (tuple, list)) and len(e[2]))]
@@ -977,7 +994,7 @@ class _GuiCoreContext(CoreEventConsumerBase):
         if id and (dn := core_get(id)) and isinstance(dn, DataNode):
             res = []
             for e in dn.edits:
-                job_id = e.get("job_id")
+                job_id = e.get(EDIT_JOB_ID_KEY)
                 job: t.Optional[Job] = None
                 if job_id:
                     if not (reason := is_readable(job_id)):
@@ -986,11 +1003,11 @@ class _GuiCoreContext(CoreEventConsumerBase):
                         job = core_get(job_id)
                 res.append(
                     (
-                        e.get("timestamp"),
-                        job_id if job_id else e.get("writer_identifier", ""),
+                        e.get(EDIT_TIMESTAMP_KEY),
+                        job_id if job_id else e.get(EDIT_EDITOR_ID_KEY, ""),
                         f"Execution of task {job.task.get_simple_label()}."
                         if job and job.task
-                        else e.get("comment", ""),
+                        else e.get(EDIT_COMMENT_KEY, ""),
                     )
                 )
             return sorted(res, key=lambda r: r[0], reverse=True)
@@ -1124,10 +1141,8 @@ class _GuiCoreContext(CoreEventConsumerBase):
         if id and is_readable(t.cast(DataNodeId, id)) and (dn := core_get(id)) and isinstance(dn, DataNode):
             try:
                 return [
-                        (k, f"{v}")
-                        for k, v in dn._get_user_properties().items()
-                        if k != _GuiCoreContext.__PROP_ENTITY_NAME
-                    ]
+                    (k, f"{v}") for k, v in dn._get_user_properties().items() if k != _GuiCoreContext.__PROP_ENTITY_NAME
+                ]
             except Exception:
                 return None
         return None

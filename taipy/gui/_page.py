@@ -17,6 +17,8 @@ import re
 import typing as t
 import warnings
 
+from ._warnings import TaipyGuiAlwaysWarning
+
 if t.TYPE_CHECKING:
     from ._renderers import Page
     from .gui import Gui
@@ -40,7 +42,15 @@ class _Page(object):
             warnings.resetwarnings()
             with gui._set_locals_context(self._renderer._get_module_name()):
                 self._rendered_jsx = self._renderer.render(gui)
-            if not silent:
+            if silent:
+                s = ""
+                for wm in w:
+                    if wm.category is TaipyGuiAlwaysWarning:
+                        s += f" - {wm.message}\n"
+                if s:
+                    logging.warning("\033[1;31m\n" + s)
+
+            else:
                 if (
                     self._rendered_jsx
                     and isinstance(self._rendered_jsx, str)

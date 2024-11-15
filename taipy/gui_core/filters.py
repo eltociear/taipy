@@ -39,8 +39,10 @@ class _Filter(_DoNotUpdate):
 
 @dataclass
 class ScenarioFilter(_Filter):
-    """
-    used to describe a filter on a scenario property
+    """NOT DOCUMENTED
+    A filter on a scenario property.
+
+
     """
 
     property_id: str
@@ -51,7 +53,7 @@ class ScenarioFilter(_Filter):
 
 @dataclass
 class DataNodeScenarioFilter(_Filter):
-    """
+    """NOT DOCUMENTED
     used to describe a filter on a scenario datanode's property
     """
 
@@ -67,7 +69,7 @@ _CUSTOM_PREFIX = "fn:"
 
 @dataclass
 class CustomScenarioFilter(_Filter):
-    """
+    """NOT DOCUMENTED
     used to describe a custom scenario filter ie based on a user defined function
     """
 
@@ -89,7 +91,7 @@ class CustomScenarioFilter(_Filter):
 
 @dataclass
 class DataNodeFilter(_Filter):
-    """
+    """NOT DOCUMENTED
     used to describe a filter on a datanode property
     """
 

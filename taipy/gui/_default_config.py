@@ -46,7 +46,7 @@ default_config: Config = {
     "change_delay": None,
     "chart_dark_template": None,
     "base_url": "/",
-    "client_url": "http://localhost:{port}",
+    "client_url": None,
     "dark_mode": True,
     "dark_theme": None,
     "debug": False,

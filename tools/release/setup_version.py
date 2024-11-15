@@ -77,12 +77,13 @@ def __setup_dev_version(version: Version, _base_path: str, name: Optional[str] =
     version.validate_suffix()
 
     name = f"{name}_VERSION" if name else "VERSION"
+
     print(f"{name}={version.dev_name}")  # noqa: T201
 
-    version.bump_ext_version()
 
+def bump_ext_version(version: Version, _base_path: str) -> None:
+    version.bump_ext_version()
     __write_version_to_path(_base_path, version)
-    print(f"NEW_{name}={version.dev_name}")  # noqa: T201
 
 
 def __setup_prod_version(version: Version, target_version: str, branch_name: str, name: str = None) -> None:

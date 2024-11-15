@@ -20,7 +20,7 @@ from ._manager import _Manager
 class _ManagerFactory:
     @classmethod
     @abstractmethod
-    def _build_manager(cls) -> Type[_Manager]:  # type: ignore
+    def _build_manager(cls) -> Type[_Manager]:
         raise NotImplementedError
 
     @classmethod

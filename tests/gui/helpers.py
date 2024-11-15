@@ -165,4 +165,4 @@ class Helpers:
 
     @staticmethod
     def get_taipy_warnings(warns: t.List[warnings.WarningMessage]) -> t.List[warnings.WarningMessage]:
-        return [w for w in warns if w.category is TaipyGuiWarning]
+        return [w for w in warns if issubclass(w.category, TaipyGuiWarning)]

@@ -29,8 +29,6 @@ class _Properties(UserDict):
         super(_Properties, self).__setitem__(key, value)
 
         if hasattr(self, "_entity_owner"):
-            from ... import core as tp
-
             event = _make_event(
                 self._entity_owner,
                 EventOperation.UPDATE,
@@ -38,7 +36,7 @@ class _Properties(UserDict):
                 attribute_value=value,
             )
             if not self._entity_owner._is_in_context:
-                tp.set(self._entity_owner)
+                self._set_entity_owner(self._entity_owner)
                 Notifier.publish(event)
             else:
                 if key in self._pending_deletions:
@@ -53,8 +51,6 @@ class _Properties(UserDict):
         super(_Properties, self).__delitem__(key)
 
         if hasattr(self, "_entity_owner"):
-            from ... import core as tp
-
             event = _make_event(
                 self._entity_owner,
                 EventOperation.UPDATE,
@@ -62,9 +58,14 @@ class _Properties(UserDict):
                 attribute_value=None,
             )
             if not self._entity_owner._is_in_context:
-                tp.set(self._entity_owner)
+                self._set_entity_owner(self._entity_owner)
                 Notifier.publish(event)
             else:
                 self._pending_changes.pop(key, None)
                 self._pending_deletions.add(key)
                 self._entity_owner._in_context_attributes_changed_collector.append(event)
+
+    def _set_entity_owner(self, entity_owner):
+        from ... import core as tp
+
+        tp.set(entity_owner)

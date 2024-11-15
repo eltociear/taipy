@@ -36,6 +36,7 @@ from taipy.core import (
 )
 from taipy.core import get as core_get
 from taipy.core.config import Config
+from taipy.core.data import JSONDataNode
 from taipy.core.data._file_datanode_mixin import _FileDataNodeMixin
 from taipy.core.data._tabular_datanode_mixin import _TabularDataNodeMixin
 from taipy.core.reason import ReasonCollection
@@ -187,8 +188,8 @@ class _GuiCoreScenarioNoUpdate(_TaipyBase, _DoNotUpdate):
 class _GuiCoreDatanodeAdapter(_TaipyBase):
     @staticmethod
     def _is_tabular_data(datanode: DataNode, value: t.Any):
-        return isinstance(datanode, _TabularDataNodeMixin) or isinstance(
-            value, (pd.DataFrame, pd.Series, list, tuple, dict)
+        return isinstance(datanode, _TabularDataNodeMixin) or (
+            isinstance(value, (pd.DataFrame, pd.Series, list, tuple, dict)) and not isinstance(datanode, JSONDataNode)
         )
 
     def __get_data(self, dn: DataNode):
@@ -278,14 +279,20 @@ _operators: t.Dict[str, t.Callable] = {
 }
 
 
-def _filter_value(base_val: t.Any, operator: t.Callable, val: t.Any, adapt: t.Optional[t.Callable] = None):
+def _filter_value(
+    base_val: t.Any,
+    operator: t.Callable,
+    val: t.Any,
+    adapt: t.Optional[t.Callable] = None,
+    match_case: bool = False,
+):
     if base_val is None:
         base_val = "" if isinstance(val, str) else 0
     else:
         if isinstance(base_val, (datetime, date)):
             base_val = base_val.isoformat()
         val = adapt(base_val, val) if adapt else val
-        if isinstance(base_val, str) and isinstance(val, str):
+        if not match_case and isinstance(base_val, str) and isinstance(val, str):
             base_val = base_val.lower()
             val = val.lower()
     return operator(base_val, val)
@@ -305,7 +312,7 @@ def _adapt_type(base_val, val):
     return val
 
 
-def _filter_iterable(list_val: Iterable, operator: t.Callable, val: t.Any):
+def _filter_iterable(list_val: Iterable, operator: t.Callable, val: t.Any, match_case: bool = False):
     if operator is contains:
         types = {type(v) for v in list_val}
         if len(types) == 1:
@@ -315,17 +322,24 @@ def _filter_iterable(list_val: Iterable, operator: t.Callable, val: t.Any):
             else:
                 val = _adapt_type(typed_val, val)
         return contains(list(list_val), val)
-    return next(filter(lambda v: _filter_value(v, operator, val), list_val), None) is not None
+    return next(filter(lambda v: _filter_value(v, operator, val, match_case=match_case), list_val), None) is not None
 
 
 def _invoke_action(
-    ent: t.Any, col: str, col_type: str, is_dn: bool, action: str, val: t.Any, col_fn: t.Optional[str]
+    ent: t.Any,
+    col: str,
+    col_type: str,
+    is_dn: bool,
+    action: str,
+    val: t.Any,
+    col_fn: t.Optional[str] = None,
+    match_case: bool = False,
 ) -> bool:
     if ent is None:
         return False
     try:
         if col_type == "any":
-            # when a property is not found, return True only if action is not equals
+            # when a property is not found, return True only if action is "not equal"
             if not is_dn and not hasattr(ent, "properties") or not ent.properties.get(col_fn or col):
                 return action == "!="
         if op := _operators.get(action):
@@ -337,8 +351,8 @@ def _invoke_action(
             if isinstance(cur_val, DataNode):
                 cur_val = cur_val.read()
             if not isinstance(cur_val, str) and isinstance(cur_val, Iterable):
-                return _filter_iterable(cur_val, op, val)
-            return _filter_value(cur_val, op, val, _adapt_type)
+                return _filter_iterable(cur_val, op, val, match_case)
+            return _filter_value(cur_val, op, val, _adapt_type, match_case)
     except Exception as e:
         if _is_debugging():
             _warn(f"Error filtering with {col} {action} {val} on {ent}.", e)

@@ -30,6 +30,7 @@ from flask import (
     jsonify,
     make_response,
     render_template,
+    render_template_string,
     request,
     send_from_directory,
 )
@@ -169,9 +170,8 @@ class _Server:
             if resource_handler_id is not None:
                 resource_handler = _ExternalResourceHandlerManager().get(resource_handler_id)
                 if resource_handler is None:
-                    response = make_response(
-                        "Cookie was deleted due to invalid resource handler id. Please restart the page manually.", 400
-                    )
+                    reload_html = "<html><head><style>body {background-color: black; margin: 0;}</style></head><body><script>location.reload();</script></body></html>"  # noqa: E501
+                    response = make_response(render_template_string(reload_html), 400)
                     response.set_cookie(
                         _Server._RESOURCE_HANDLER_ARG, "", secure=request.is_secure, httponly=True, expires=0, path="/"
                     )
@@ -317,8 +317,8 @@ class _Server:
         self._host = host
         if port == "auto":
             port = self._get_random_port(port_auto_ranges)
+        server_url = f"http://{host_value}:{port}"
         self._port = port
-        client_url = client_url.format(port=port)
         if _is_in_notebook() and notebook_proxy:  # pragma: no cover
             from .utils.proxy import NotebookProxy
 
@@ -337,12 +337,14 @@ class _Server:
             log = logging.getLogger("werkzeug")
             log.disabled = True
             if not is_running_from_reloader():
-                _TaipyLogger._get_logger().info(f" * Server starting on http://{host_value}:{port}")
+                _TaipyLogger._get_logger().info(f" * Server starting on {server_url}")
             else:
-                _TaipyLogger._get_logger().info(f" * Server reloaded on http://{host_value}:{port}")
-            _TaipyLogger._get_logger().info(f" * Application is accessible at {client_url}")
+                _TaipyLogger._get_logger().info(f" * Server reloaded on {server_url}")
+            if client_url is not None:
+                client_url = client_url.format(port=port)
+                _TaipyLogger._get_logger().info(f" * Application is accessible at {client_url}")
         if not is_running_from_reloader() and self._gui._get_config("run_browser", False):
-            webbrowser.open(client_url, new=2)
+            webbrowser.open(client_url or server_url, new=2)
         if _is_in_notebook() or run_in_thread:
             self._thread = KThread(target=self._run_notebook)
             self._thread.start()

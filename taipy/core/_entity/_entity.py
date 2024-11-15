@@ -11,7 +11,7 @@
 
 from typing import List
 
-from .._entity._reload import _get_manager
+from .._entity._reload import _Reloader
 from ..notification import Notifier
 
 
@@ -33,8 +33,8 @@ class _Entity:
             for to_delete_key in self._properties._pending_deletions:
                 self._properties.data.pop(to_delete_key, None)
             self._properties.data.update(self._properties._pending_changes)
-        _get_manager(self._MANAGER_NAME)._set(self)
+        _Reloader._get_manager(self._MANAGER_NAME)._set(self)
 
         for event in self._in_context_attributes_changed_collector:
             Notifier.publish(event)
-        _get_manager(self._MANAGER_NAME)._set(self)
+        _Reloader._get_manager(self._MANAGER_NAME)._set(self)

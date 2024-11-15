@@ -11,6 +11,7 @@
 
 import functools
 import os
+import typing
 import uuid
 from abc import abstractmethod
 from datetime import datetime, timedelta
@@ -33,7 +34,7 @@ from ..job.job_id import JobId
 from ..notification.event import Event, EventEntityType, EventOperation, _make_event
 from ..reason import DataNodeEditInProgress, DataNodeIsNotWritten
 from ._filter import _FilterDataNode
-from .data_node_id import DataNodeId, Edit
+from .data_node_id import EDIT_COMMENT_KEY, EDIT_EDITOR_ID_KEY, EDIT_JOB_ID_KEY, EDIT_TIMESTAMP_KEY, DataNodeId, Edit
 from .operator import JoinOperator
 
 
@@ -199,6 +200,11 @@ class DataNode(_Entity, _Labeled):
         Additional metadata related to the edition made to the data node can also be provided in Edits.
         """
         return self._edits
+
+    @edits.setter  # type: ignore
+    @_self_setter(_MANAGER_NAME)
+    def edits(self, val):
+        self._edits = val
 
     @property  # type: ignore
     @_self_reload(_MANAGER_NAME)
@@ -415,29 +421,29 @@ class DataNode(_Entity, _Labeled):
             )
             return None
 
-    def append(self, data, job_id: Optional[JobId] = None, **kwargs: Dict[str, Any]):
+    def append(self, data, editor_id: Optional[str] = None, **kwargs: Any):
         """Append some data to this data node.
 
         Arguments:
             data (Any): The data to write to this data node.
-            job_id (JobId): An optional identifier of the writer.
-            **kwargs (dict[str, any]): Extra information to attach to the edit document
+            editor_id (str): An optional identifier of the editor.
+            **kwargs (Any): Extra information to attach to the edit document
                 corresponding to this write.
         """
         from ._data_manager_factory import _DataManagerFactory
 
         self._append(data)
-        self.track_edit(job_id=job_id, **kwargs)
+        self.track_edit(editor_id=editor_id, **kwargs)
         self.unlock_edit()
         _DataManagerFactory._build_manager()._set(self)
 
-    def write(self, data, job_id: Optional[JobId] = None, **kwargs: Dict[str, Any]):
+    def write(self, data, job_id: Optional[JobId] = None, **kwargs: Any):
         """Write some data to this data node.
 
         Arguments:
             data (Any): The data to write to this data node.
-            job_id (JobId): An optional identifier of the writer.
-            **kwargs (dict[str, any]): Extra information to attach to the edit document
+            job_id (JobId): An optional identifier of the job writing the data.
+            **kwargs (Any): Extra information to attach to the edit document
                 corresponding to this write.
         """
         from ._data_manager_factory import _DataManagerFactory
@@ -447,20 +453,35 @@ class DataNode(_Entity, _Labeled):
         self.unlock_edit()
         _DataManagerFactory._build_manager()._set(self)
 
-    def track_edit(self, **options):
+    def track_edit(self,
+                   job_id: Optional[str] = None,
+                   editor_id: Optional[str] = None,
+                   timestamp: Optional[datetime] = None,
+                   comment: Optional[str] = None,
+                   **options: Any):
         """Creates and adds a new entry in the edits attribute without writing the data.
 
         Arguments:
-            options (dict[str, any]): track `timestamp`, `comments`, `job_id`. The others are user-custom, users can
-                use options to attach any information to an external edit of a data node.
+            job_id (Optional[str]): The optional identifier of the job writing the data.
+            editor_id (Optional[str]): The optional identifier of the editor writing the data.
+            timestamp (Optional[datetime]): The optional timestamp of the edit. If not provided, the
+                current time is used.
+            comment (Optional[str]): The optional comment of the edit.
+            **options (Any): User-custom attributes to attach to the edit.
         """
         edit = {k: v for k, v in options.items() if v is not None}
-        if "timestamp" not in edit:
-            edit["timestamp"] = (
-                self._get_last_modified_datetime(self._properties.get(self._PATH_KEY, None)) or datetime.now()
-            )
-        self.last_edit_date = edit.get("timestamp")
-        self._edits.append(edit)
+        if job_id:
+            edit[EDIT_JOB_ID_KEY] = job_id
+        if editor_id:
+            edit[EDIT_EDITOR_ID_KEY] = editor_id
+        if comment:
+            edit[EDIT_COMMENT_KEY] = comment
+        if not timestamp:
+            timestamp = self._get_last_modified_datetime(self._properties.get(self._PATH_KEY)) or datetime.now()
+        edit[EDIT_TIMESTAMP_KEY] = timestamp
+        self.last_edit_date = edit.get(EDIT_TIMESTAMP_KEY)
+        self._edits.append(typing.cast(Edit, edit))
+        self.edits = self._edits
 
     def lock_edit(self, editor_id: Optional[str] = None):
         """Lock the data node modification.

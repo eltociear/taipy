@@ -286,8 +286,18 @@ describe("Metric Component", () => {
         });
     });
 
-    it("processes type prop correctly when type is none", async () => {
-        const { container } = render(<Metric type="none"  />);
+    it("processes type prop correctly when type is none (string)", async () => {
+        const { container } = render(<Metric type="none" />);
+        await waitFor(() => {
+            const angularElm = container.querySelector(".angular");
+            const angularAxis = container.querySelector(".angularaxis");
+            expect(angularElm).not.toBeInTheDocument();
+            expect(angularAxis).not.toBeInTheDocument();
+        });
+    });
+    
+    it("processes type prop correctly when type is None", async () => {
+        const { container } = render(<Metric type="None" />);
         await waitFor(() => {
             const angularElm = container.querySelector(".angular");
             const angularAxis = container.querySelector(".angularaxis");

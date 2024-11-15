@@ -21,6 +21,7 @@ import sys
 import tempfile
 import time
 import typing as t
+import uuid
 import warnings
 from importlib import metadata, util
 from importlib.util import find_spec
@@ -72,7 +73,7 @@ from .extension.library import Element, ElementLibrary
 from .page import Page
 from .partial import Partial
 from .server import _Server
-from .state import State
+from .state import State, _GuiState
 from .types import _WsType
 from .utils import (
     _delscopeattr,
@@ -734,7 +735,7 @@ class Gui:
         elif rel_var and isinstance(current_value, _TaipyLovValue):  # pragma: no cover
             lov_holder = _getscopeattr_drill(self, self.__evaluator.get_hash_from_expr(rel_var))
             if isinstance(lov_holder, _TaipyLov):
-                if value:
+                if isinstance(value, str):
                     val = value if isinstance(value, list) else [value]
                     elt_4_ids = self.__adapter._get_elt_per_ids(lov_holder.get_name(), lov_holder.get())
                     ret_val = [elt_4_ids.get(x, x) for x in val]
@@ -988,6 +989,8 @@ class Gui:
         context = request.form.get("context", None)
         upload_data = request.form.get("upload_data", None)
         multiple = "multiple" in request.form and request.form["multiple"] == "True"
+
+        # File parsing and checks
         file = request.files.get("blob", None)
         if not file:
             _warn("upload files: No file part")
@@ -997,58 +1000,72 @@ class Gui:
         if file.filename == "":
             _warn("upload files: No selected file")
             return ("upload files: No selected file", 400)
+
+        # Path parsing and checks
+        path = request.form.get("path", "")
         suffix = ""
         complete = True
         part = 0
+
         if "total" in request.form:
             total = int(request.form["total"])
             if total > 1 and "part" in request.form:
                 part = int(request.form["part"])
                 suffix = f".part.{part}"
                 complete = part == total - 1
-        if file:  # and allowed_file(file.filename)
-            upload_path = Path(self._get_config("upload_folder", tempfile.gettempdir())).resolve()
+
+        # Extract upload path (when single file is selected, path="" does not change the path)
+        upload_root = os.path.abspath( self._get_config( "upload_folder", tempfile.gettempdir() ) )
+        upload_path = os.path.abspath( os.path.join( upload_root, os.path.dirname(path) ) )
+        if upload_path.startswith( upload_root ):
+            upload_path = Path( upload_path ).resolve()
+            os.makedirs( upload_path, exist_ok=True )
+            # Save file into upload_path directory
             file_path = _get_non_existent_file_path(upload_path, secure_filename(file.filename))
-            file.save(str(upload_path / (file_path.name + suffix)))
-            if complete:
-                if part > 0:
-                    try:
-                        with open(file_path, "wb") as grouped_file:
-                            for nb in range(part + 1):
-                                part_file_path = upload_path / f"{file_path.name}.part.{nb}"
-                                with open(part_file_path, "rb") as part_file:
-                                    grouped_file.write(part_file.read())
-                                # remove file_path after it is merged
-                                part_file_path.unlink()
-                    except EnvironmentError as ee:  # pragma: no cover
-                        _warn(f"Cannot group file after chunk upload for {file.filename}", ee)
-                        return (f"Cannot group file after chunk upload for {file.filename}", 500)
-                # notify the file is uploaded
-                newvalue = str(file_path)
-                if multiple and var_name:
-                    value = _getscopeattr(self, var_name)
-                    if not isinstance(value, t.List):
-                        value = [] if value is None else [value]
-                    value.append(newvalue)
-                    newvalue = value
-                with self._set_locals_context(context):
-                    if on_upload_action:
-                        data = {}
-                        if upload_data:
-                            try:
-                                data = json.loads(upload_data)
-                            except Exception:
-                                pass
-                        data["path"] = file_path
-                        file_fn = self._get_user_function(on_upload_action)
-                        if not _is_function(file_fn):
-                            file_fn = _getscopeattr(self, on_upload_action)
-                        if _is_function(file_fn):
-                            self._call_function_with_state(
-                                t.cast(t.Callable, file_fn), ["file_upload", {"args": [data]}]
-                            )
-                    else:
-                        setattr(self._bindings(), var_name, newvalue)
+            file.save( os.path.join( upload_path, (file_path.name + suffix) ) )
+        else:
+            _warn(f"upload files: Path {path} points outside of upload root.")
+            return("upload files: Path part points outside of upload root.", 400)
+
+        if complete:
+            if part > 0:
+                try:
+                    with open(file_path, "wb") as grouped_file:
+                        for nb in range(part + 1):
+                            part_file_path = upload_path / f"{file_path.name}.part.{nb}"
+                            with open(part_file_path, "rb") as part_file:
+                                grouped_file.write(part_file.read())
+                            # remove file_path after it is merged
+                            part_file_path.unlink()
+                except EnvironmentError as ee:  # pragma: no cover
+                    _warn(f"Cannot group file after chunk upload for {file.filename}", ee)
+                    return (f"Cannot group file after chunk upload for {file.filename}", 500)
+            # notify the file is uploaded
+            newvalue = str(file_path)
+            if multiple and var_name:
+                value = _getscopeattr(self, var_name)
+                if not isinstance(value, t.List):
+                    value = [] if value is None else [value]
+                value.append(newvalue)
+                newvalue = value
+            with self._set_locals_context(context):
+                if on_upload_action:
+                    data = {}
+                    if upload_data:
+                        try:
+                            data = json.loads(upload_data)
+                        except Exception:
+                            pass
+                    data["path"] = file_path
+                    file_fn = self._get_user_function(on_upload_action)
+                    if not _is_function(file_fn):
+                        file_fn = _getscopeattr(self, on_upload_action)
+                    if _is_function(file_fn):
+                        self._call_function_with_state(
+                            t.cast(t.Callable, file_fn), ["file_upload", {"args": [data]}]
+                        )
+                else:
+                    setattr(self._bindings(), var_name, newvalue)
         return ("", 200)
 
     def __send_var_list_update(  # noqa C901
@@ -1330,15 +1347,22 @@ class Gui:
             send_back_only=True,
         )
 
-    def __send_ws_alert(self, type: str, message: str, system_notification: bool, duration: int) -> None:
+    def __send_ws_alert(
+        self, type: str, message: str, system_notification: bool, duration: int, notification_id: t.Optional[str] = None
+    ) -> None:
+        payload = {
+            "type": _WsType.ALERT.value,
+            "atype": type,
+            "message": message,
+            "system": system_notification,
+            "duration": duration,
+        }
+
+        if notification_id:
+            payload["notificationId"] = notification_id
+
         self.__send_ws(
-            {
-                "type": _WsType.ALERT.value,
-                "atype": type,
-                "message": message,
-                "system": system_notification,
-                "duration": duration,
-            }
+            payload,
         )
 
     def __send_ws_partial(self, partial: str):
@@ -2242,13 +2266,32 @@ class Gui:
         message: str = "",
         system_notification: t.Optional[bool] = None,
         duration: t.Optional[int] = None,
+        notification_id: t.Optional[str] = None,
     ):
+        if not notification_id:
+            notification_id = str(uuid.uuid4())
+
         self.__send_ws_alert(
             notification_type,
             message,
             self._get_config("system_notification", False) if system_notification is None else system_notification,
             self._get_config("notification_duration", 3000) if duration is None else duration,
+            notification_id,
         )
+        return notification_id
+
+    def _close_notification(
+        self,
+        notification_id: str,
+    ):
+        if notification_id:
+            self.__send_ws_alert(
+                type="",  # Since you're closing, set type to an empty string or a predefined "close" type
+                message="",  # No need for a message when closing
+                system_notification=False,  # System notification not needed for closing
+                duration=0,  # No duration since it's an immediate close
+                notification_id=notification_id,
+            )
 
     def _hold_actions(
         self,
@@ -2260,7 +2303,9 @@ class Gui:
             if isinstance(callback, str)
             else _get_lambda_id(t.cast(LambdaType, callback))
             if _is_unnamed_function(callback)
-            else callback.__name__ if callback is not None else None
+            else callback.__name__
+            if callback is not None
+            else None
         )
         func = self.__get_on_cancel_block_ui(action_name)
         def_action_name = func.__name__
@@ -2627,13 +2672,13 @@ class Gui:
             s if bool(urlparse(s).netloc) else f"{Gui._EXTENSION_ROOT}/{name}/{s}{lib.get_query(s)}"
             for name, libs in Gui.__extensions.items()
             for lib in libs
-            for s in (lib.get_scripts() or [])
+            for s in (lib._do_get_relative_paths(lib.get_scripts()))
         ]
         styles = [
             s if bool(urlparse(s).netloc) else f"{Gui._EXTENSION_ROOT}/{name}/{s}{lib.get_query(s)}"
             for name, libs in Gui.__extensions.items()
             for lib in libs
-            for s in (lib.get_styles() or [])
+            for s in (lib._do_get_relative_paths(lib.get_styles()))
         ]
         if self._get_config("stylekit", True):
             styles.append("stylekit/stylekit.css")
@@ -2777,7 +2822,9 @@ class Gui:
         self.__var_dir.set_default(self.__frame)
 
         if self.__state is None or is_reloading:
-            self.__state = State(self, self.__locals_context.get_all_keys(), self.__locals_context.get_all_context())
+            self.__state = _GuiState(
+                self, self.__locals_context.get_all_keys(), self.__locals_context.get_all_context()
+            )
 
         if _is_in_notebook():
             # Allow gui.state.x in notebook mode

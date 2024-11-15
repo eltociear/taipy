@@ -65,7 +65,7 @@ class _GuiCore(ElementLibrary):
     __DATANODE_SELECTOR_SORT_VAR = "__tpgc_dn_sort"
     __DATANODE_SELECTOR_ERROR_VAR = "__tpgc_dn_error"
 
-    __elts = {
+    __elements = {
         "scenario_selector": Element(
             "value",
             {
@@ -210,6 +210,7 @@ class _GuiCore(ElementLibrary):
                 "show_owner": ElementProperty(PropertyType.boolean, True),
                 "show_edit_date": ElementProperty(PropertyType.boolean, False),
                 "show_expiration_date": ElementProperty(PropertyType.boolean, False),
+                "show_custom_properties": ElementProperty(PropertyType.boolean, True),
                 "show_properties": ElementProperty(PropertyType.boolean, True),
                 "show_history": ElementProperty(PropertyType.boolean, True),
                 "show_data": ElementProperty(PropertyType.boolean, True),
@@ -313,10 +314,10 @@ class _GuiCore(ElementLibrary):
         return _GuiCore.__LIB_NAME
 
     def get_elements(self) -> t.Dict[str, Element]:
-        return _GuiCore.__elts
+        return _GuiCore.__elements
 
     def get_scripts(self) -> t.List[str]:
-        return ["lib/taipy-gui-core.js"]
+        return ["lib/*.js"]
 
     def on_init(self, gui: Gui) -> t.Optional[t.Tuple[str, t.Any]]:
         self.ctx = _GuiCoreContext(gui)

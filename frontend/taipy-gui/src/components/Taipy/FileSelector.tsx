@@ -35,11 +35,14 @@ import { uploadFile } from "../../workers/fileupload";
 import { SxProps } from "@mui/material";
 import { getComponentClassName } from "./TaipyStyle";
 
+
+
 interface FileSelectorProps extends TaipyActiveProps {
     onAction?: string;
     defaultLabel?: string;
     label?: string;
     multiple?: boolean;
+    selectionType?: string;
     extensions?: string;
     dropMessage?: string;
     notify?: boolean;
@@ -65,12 +68,16 @@ const FileSelector = (props: FileSelectorProps) => {
         defaultLabel = "",
         updateVarName = "",
         multiple = false,
+        selectionType = "file",
         extensions = ".csv,.xlsx",
         dropMessage = "Drop here to Upload",
         label,
         notify = true,
         withBorder = true,
     } = props;
+    const directoryProps = ["d", "dir", "directory", "folder"].includes(selectionType?.toLowerCase()) ? 
+                           {webkitdirectory: "", directory: "", mozdirectory: "", nwdirectory: ""} : 
+                           undefined;
     const [dropLabel, setDropLabel] = useState("");
     const [dropSx, setDropSx] = useState<SxProps | undefined>(defaultSx);
     const [upload, setUpload] = useState(false);
@@ -194,6 +201,7 @@ const FileSelector = (props: FileSelectorProps) => {
                 type="file"
                 accept={extensions}
                 multiple={multiple}
+                {...directoryProps}
                 onChange={handleChange}
                 disabled={!active || upload}
             />

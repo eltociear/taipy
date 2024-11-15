@@ -61,9 +61,9 @@ def test_write_never_written_input_does_not_publish_submittable_event():
     snapshot = all_evts.capture()
 
     # Since it is a lazy property, no submittable event is published. Only the data node update events are published.
-    assert len(snapshot.collected_events) == 4
-    assert snapshot.entity_type_collected.get(EventEntityType.DATA_NODE, 0) == 4
-    assert snapshot.operation_collected.get(EventOperation.UPDATE, 0) == 4
+    assert len(snapshot.collected_events) == 5
+    assert snapshot.entity_type_collected.get(EventEntityType.DATA_NODE, 0) == 5
+    assert snapshot.operation_collected.get(EventOperation.UPDATE, 0) == 5
 
 
 def test_write_never_written_input_publish_submittable_event_if_scenario_in_property():
@@ -85,12 +85,12 @@ def test_write_never_written_input_publish_submittable_event_if_scenario_in_prop
     snapshot = all_evts.capture()
 
     # Since it is a lazy property, no submittable event is published. Only the data node update events are published.
-    assert len(snapshot.collected_events) == 13
-    assert snapshot.entity_type_collected.get(EventEntityType.DATA_NODE, 0) == 7
+    assert len(snapshot.collected_events) == 14
+    assert snapshot.entity_type_collected.get(EventEntityType.DATA_NODE, 0) == 8
     assert snapshot.entity_type_collected.get(EventEntityType.TASK, 0) == 2
     assert snapshot.entity_type_collected.get(EventEntityType.SEQUENCE, 0) == 2
     assert snapshot.entity_type_collected.get(EventEntityType.SCENARIO, 0) == 2
-    assert snapshot.operation_collected.get(EventOperation.UPDATE, 0) == 13
+    assert snapshot.operation_collected.get(EventOperation.UPDATE, 0) == 14
     assert snapshot.attr_name_collected["is_submittable"] == 6
     assert snapshot.attr_value_collected["is_submittable"] == [False, False, False, True, True, True]
 
@@ -109,9 +109,9 @@ def test_write_output_does_not_publish_submittable_event():
     scenario.dn_2.write(15)
     snapshot = all_evts.capture()
 
-    assert len(snapshot.collected_events) == 4
-    assert snapshot.entity_type_collected.get(EventEntityType.DATA_NODE, 0) == 4
-    assert snapshot.operation_collected.get(EventOperation.UPDATE, 0) == 4
+    assert len(snapshot.collected_events) == 5
+    assert snapshot.entity_type_collected.get(EventEntityType.DATA_NODE, 0) == 5
+    assert snapshot.operation_collected.get(EventOperation.UPDATE, 0) == 5
     assert "is_submittable" not in snapshot.attr_name_collected
     assert "is_submittable" not in snapshot.attr_value_collected
     all_evts.stop()

@@ -33,8 +33,9 @@ def test_delete_datanode(client):
     rep = client.get(user_url)
     assert rep.status_code == 404
 
-    with mock.patch("taipy.core.data._data_manager._DataManager._delete"), mock.patch(
-        "taipy.core.data._data_manager._DataManager._get"
+    with (
+        mock.patch("taipy.core.data._data_manager._DataManager._delete"),
+        mock.patch("taipy.core.data._data_manager._DataManager._get"),
     ):
         # test get_datanode
         rep = client.delete(url_for("api.datanode_by_id", datanode_id="foo"))
@@ -63,7 +64,7 @@ def test_get_all_datanodes(client, default_datanode_config_list):
     for ds in range(10):
         with mock.patch("taipy.rest.api.resources.datanode.DataNodeList.fetch_config") as config_mock:
             config_mock.return_value = default_datanode_config_list[ds]
-            datanodes_url = url_for("api.datanodes", config_id=config_mock.name)
+            datanodes_url = url_for("api.datanodes", config_id=default_datanode_config_list[ds].name)
             client.post(datanodes_url)
 
     rep = client.get(datanodes_url)

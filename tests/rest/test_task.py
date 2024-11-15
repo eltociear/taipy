@@ -34,8 +34,9 @@ def test_delete_task(client):
     rep = client.get(user_url)
     assert rep.status_code == 404
 
-    with mock.patch("taipy.core.task._task_manager._TaskManager._delete"), mock.patch(
-        "taipy.core.task._task_manager._TaskManager._get"
+    with (
+        mock.patch("taipy.core.task._task_manager._TaskManager._delete"),
+        mock.patch("taipy.core.task._task_manager._TaskManager._get"),
     ):
         # test get_task
         rep = client.delete(url_for("api.task_by_id", task_id="foo"))
@@ -64,7 +65,7 @@ def test_get_all_tasks(client, task_data, default_task_config_list):
     for ds in range(10):
         with mock.patch("taipy.rest.api.resources.task.TaskList.fetch_config") as config_mock:
             config_mock.return_value = default_task_config_list[ds]
-            tasks_url = url_for("api.tasks", config_id=config_mock.name)
+            tasks_url = url_for("api.tasks", config_id=default_task_config_list[ds].name)
             client.post(tasks_url)
 
     rep = client.get(tasks_url)

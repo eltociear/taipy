@@ -8,6 +8,7 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
 # an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
+
 from functools import lru_cache
 from typing import Type
 
@@ -27,7 +28,7 @@ class _DataManagerFactory(_ManagerFactory):
         if EnterpriseEditionUtils._using_enterprise():
             data_manager = _load_fct(
                 EnterpriseEditionUtils._TAIPY_ENTERPRISE_CORE_MODULE + ".data._data_manager", "_DataManager"
-            )  # type: ignore
+            )
             build_repository = _load_fct(
                 EnterpriseEditionUtils._TAIPY_ENTERPRISE_CORE_MODULE + ".data._data_manager_factory",
                 "_DataManagerFactory",

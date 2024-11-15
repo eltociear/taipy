@@ -23,7 +23,13 @@ from taipy.common.config.exceptions.exceptions import InvalidConfigurationId
 from taipy.core.data._data_manager import _DataManager
 from taipy.core.data._data_manager_factory import _DataManagerFactory
 from taipy.core.data.data_node import DataNode
-from taipy.core.data.data_node_id import DataNodeId
+from taipy.core.data.data_node_id import (
+    EDIT_COMMENT_KEY,
+    EDIT_EDITOR_ID_KEY,
+    EDIT_JOB_ID_KEY,
+    EDIT_TIMESTAMP_KEY,
+    DataNodeId,
+)
 from taipy.core.data.in_memory import InMemoryDataNode
 from taipy.core.exceptions.exceptions import DataNodeIsBeingEdited, NoData
 from taipy.core.job.job_id import JobId
@@ -667,7 +673,7 @@ class TestDataNode:
         data_node.path = "baz.p"
         assert data_node.path == "baz.p"
 
-    def test_track_edit(self):
+    def test_edit_edit_tracking(self):
         dn_config = Config.configure_data_node("A")
         data_node = _DataManager._bulk_get_or_create([dn_config])[dn_config]
 
@@ -745,3 +751,59 @@ class TestDataNode:
         # This new syntax will be the only one allowed: https://github.com/Avaiga/taipy-core/issues/806
         dn.properties["name"] = "baz"
         assert dn.name == "baz"
+
+    def test_track_edit(self):
+        dn_config = Config.configure_data_node("A")
+        data_node = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+
+        before = datetime.now()
+        data_node.track_edit(job_id="job_1")
+        data_node.track_edit(editor_id="editor_1")
+        data_node.track_edit(comment="This is a comment on this edit")
+        data_node.track_edit(editor_id="editor_2", comment="This is another comment on this edit")
+        data_node.track_edit(editor_id="editor_3", foo="bar")
+        after = datetime.now()
+        timestamp = datetime.now()
+        data_node.track_edit(timestamp=timestamp)
+        _DataManagerFactory._build_manager()._set(data_node)
+        # To save the edits because track edit does not save the data node
+
+        assert len(data_node.edits) == 6
+        assert data_node.edits[-1] == data_node.get_last_edit()
+        assert data_node.last_edit_date == data_node.get_last_edit().get(EDIT_TIMESTAMP_KEY)
+
+        edit_0 = data_node.edits[0]
+        assert len(edit_0) == 2
+        assert edit_0[EDIT_JOB_ID_KEY] == "job_1"
+        assert edit_0[EDIT_TIMESTAMP_KEY] >= before
+        assert edit_0[EDIT_TIMESTAMP_KEY] <= after
+
+        edit_1 = data_node.edits[1]
+        assert len(edit_1) == 2
+        assert edit_1[EDIT_EDITOR_ID_KEY] == "editor_1"
+        assert edit_1[EDIT_TIMESTAMP_KEY] >= before
+        assert edit_1[EDIT_TIMESTAMP_KEY] <= after
+
+        edit_2 = data_node.edits[2]
+        assert len(edit_2) == 2
+        assert edit_2[EDIT_COMMENT_KEY] == "This is a comment on this edit"
+        assert edit_2[EDIT_TIMESTAMP_KEY] >= before
+        assert edit_2[EDIT_TIMESTAMP_KEY] <= after
+
+        edit_3 = data_node.edits[3]
+        assert len(edit_3) == 3
+        assert edit_3[EDIT_EDITOR_ID_KEY] == "editor_2"
+        assert edit_3[EDIT_COMMENT_KEY] == "This is another comment on this edit"
+        assert edit_3[EDIT_TIMESTAMP_KEY] >= before
+        assert edit_3[EDIT_TIMESTAMP_KEY] <= after
+
+        edit_4 = data_node.edits[4]
+        assert len(edit_4) == 3
+        assert edit_4[EDIT_EDITOR_ID_KEY] == "editor_3"
+        assert edit_4["foo"] == "bar"
+        assert edit_4[EDIT_TIMESTAMP_KEY] >= before
+        assert edit_4[EDIT_TIMESTAMP_KEY] <= after
+
+        edit_5 = data_node.edits[5]
+        assert len(edit_5) == 1
+        assert edit_5[EDIT_TIMESTAMP_KEY] == timestamp

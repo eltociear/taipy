@@ -61,7 +61,7 @@ class _Builder:
 
     __BLOCK_CONTROLS = ["dialog", "expandable", "pane", "part"]
 
-    __TABLE_COLUMNS_DEPS = [
+    __TABLE_COLUMNS_DEPS = {
         "data",
         "columns",
         "date_format",
@@ -75,7 +75,10 @@ class _Builder:
         "style",
         "tooltip",
         "lov",
-    ]
+        "row_class_name",
+        "cell_class_name",
+        "format_fn"
+    }
 
     def __init__(
         self,

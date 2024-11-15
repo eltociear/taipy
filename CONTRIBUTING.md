@@ -129,7 +129,7 @@ issue or PR if you're still interested in working on it.
 ### Python
 
 Taipy's repositories follow the [PEP 8](https://www.python.org/dev/peps/pep-0008/) and
-[PEP 484](https://www.python.org/dev/peps/pep-0484/) coding convention.
+[PEP 484](https://www.python.org/dev/peps/pep-0484/) coding convention. Gui variables need to be `snake_case` to be correctly converted into the `camelCase`, used for typescript variables.
 
 ### TypeScript
 
@@ -255,17 +255,26 @@ npm run build:dev
 This will preserve the debugging symbols, and you will be able to navigate in the TypeScript code
 from your debugger.
 
-!!!note "Web application location"
-    When you are developing front-end code for the Taipy GUI package, it may be cumbersome to have
-    to install the package over and over when you know that all that has changed is the JavaScript
-    bundle that makes the Taipy web app.
+#### 📝A note on "Web application location"
+When you are developing front-end code for the Taipy GUI package, it may be cumbersome to have
+to install the package over and over when you know that all that has changed is the JavaScript
+bundle that makes the Taipy web app.
 
-    By default, the Taipy GUI application searches for the front-end code in the
-    `[taipy-gui-package-dir]/taipy/gui/webapp` directory.
-    You can, however, set the environment variable `TAIPY_GUI_WEBAPP_PATH` to the location of your
-    choice, and Taipy GUI will look for the web app in that directory.
-    If you set this variable to the location where you build the web app repeatedly, you will no
-    longer have to reinstall Taipy GUI before you try your code again.
+By default, the Taipy GUI application searches for the front-end code in the
+`[taipy-gui-package-dir]/taipy/gui/webapp` directory.
+You can, however, set the environment variable `TAIPY_GUI_WEBAPP_PATH` to the location of your
+choice, and Taipy GUI will look for the web app in that directory.
+If you set this variable to the location where you build the web app repeatedly, you will no
+longer have to reinstall Taipy GUI before you try your code again.
+In python, you can handle this with:
+```python
+import os
+os.environ["TAIPY_GUI_WEBAPP_PATH"] = os.path.normpath( "/path/to/your/taipy/taipy/gui/webapp" )
+```
+or in bash with:
+```bash
+export TAIPY_GUI_WEBAPP_PATH="/path/to/your/taipy/taipy/gui/webapp"
+```
 
 ### Running the tests
 

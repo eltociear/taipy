@@ -16,7 +16,7 @@ import xml.etree.ElementTree as etree
 from abc import ABC, abstractmethod
 from inspect import isclass
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 from .._renderers.builder import _Builder
 from .._warnings import _warn
@@ -115,7 +115,7 @@ class Element:
             default_property (str): The name of the default property for this element.
             properties (Dict[str, ElementProperty]): The dictionary containing the properties of this element, where the keys are the property names and the values are instances of ElementProperty.
             inner_properties (Optional[List[ElementProperty]]): The optional list of inner properties for this element.<br/>
-                Default values are set/binded automatically.
+                Default values are set/bound automatically.
             react_component (Optional[str]): The name of the component to be created on the front-end.<br/>
                 If not specified, it is set to a camel case version of the element's name
                 ("one_name" is transformed to "OneName").
@@ -324,9 +324,27 @@ class ElementLibrary(ABC):
         """
         return _to_camel_case(self.get_name(), True)
 
+    def __get_class_folder(self):
+        if not hasattr(self, "_class_folder"):
+            module_obj = sys.modules.get(self.__class__.__module__)
+            base = (Path(".") if module_obj is None else Path(module_obj.__file__).parent).resolve()  # type: ignore
+            self._class_folder = base if base.exists() else Path(".").resolve()
+        return self._class_folder
+
+    def _do_get_relative_paths(self, paths: t.List[str]) -> t.List[str]:
+        ret = set()
+        for path in paths or []:
+            if bool(urlparse(path).netloc):
+                ret.add(path)
+            elif file_paths := self.__get_class_folder().glob(path):
+                ret.update([file_path.relative_to(self.__get_class_folder()).as_posix() for file_path in file_paths])
+            elif path:
+                ret.add(path)
+        return list(ret)
+
     def get_scripts(self) -> t.List[str]:
         """
-        Return the list of the mandatory script file pathnames.
+        Return the list of the mandatory script file path names.
 
         If a script file pathname is an absolute URL it will be used as is.<br/>
         If it's not it will be passed to `(ElementLibrary.)get_resource()^` to retrieve a local
@@ -363,9 +381,7 @@ class ElementLibrary(ABC):
         Arguments:
             name (str): The name of the resource for which a local Path should be returned.
         """  # noqa: E501
-        module_obj = sys.modules.get(self.__class__.__module__)
-        base = (Path(".") if module_obj is None else Path(module_obj.__file__).parent).resolve()  # type: ignore
-        base = base if base.exists() else Path(".").resolve()
+        base = self.__get_class_folder()
         file = (base / name).resolve()
         if str(file).startswith(str(base)) and file.exists():
             return file

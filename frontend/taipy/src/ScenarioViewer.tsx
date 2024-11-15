@@ -406,6 +406,7 @@ const ScenarioViewer = (props: ScenarioViewerProps) => {
                     { action: props.onDelete, error_id: getUpdateVar(updateScVars, "error_id") },
                     undefined,
                     undefined,
+                    undefined,
                     true,
                     true,
                     { id: scId }

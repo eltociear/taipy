@@ -30,15 +30,24 @@ class TaipyGuiWarning(UserWarning):
         )
 
 
-def _warn(message: str, e: t.Optional[BaseException] = None):
+class TaipyGuiAlwaysWarning(TaipyGuiWarning):
+    pass
+
+
+def _warn(
+    message: str,
+    e: t.Optional[BaseException] = None,
+    always_show: t.Optional[bool] = False,
+):
     warnings.warn(
         (
-            f"{message}:\n{''.join(traceback.format_exception(type(e), e, e.__traceback__))}"
+            f"{message}:\n{''.join(traceback.format_exception(e))}"
             if e and TaipyGuiWarning._tp_debug_mode
-            else f"{message}:\n{e}"
+            else f"{message}:\n"
+            + "".join(traceback.format_exception(None, e, e.__traceback__.tb_next if e.__traceback__ else None))
             if e
             else message
         ),
-        TaipyGuiWarning,
+        TaipyGuiWarning if not always_show else TaipyGuiAlwaysWarning,
         stacklevel=2,
     )

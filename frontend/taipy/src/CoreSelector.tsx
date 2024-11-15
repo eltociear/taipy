@@ -137,19 +137,19 @@ const CoreItem = (props: {
     return !props.displayCycles && nodeType === NodeType.CYCLE ? (
         <>
             {items
-                ? items.filter(v=>v).map((item) => (
-                      <CoreItem
-                          key={item[0]}
-                          item={item}
-                          displayCycles={false}
-                          showPrimaryFlag={props.showPrimaryFlag}
-                          leafType={props.leafType}
-                          pins={props.pins}
-                          onPin={props.onPin}
-                          hideNonPinned={props.hideNonPinned}
-                          active={props.active}
-                      />
-                  ))
+                ? items.filter(v => v).map((item) => (
+                    <CoreItem
+                        key={item[0]}
+                        item={item}
+                        displayCycles={false}
+                        showPrimaryFlag={props.showPrimaryFlag}
+                        leafType={props.leafType}
+                        pins={props.pins}
+                        onPin={props.onPin}
+                        hideNonPinned={props.hideNonPinned}
+                        active={props.active}
+                    />
+                ))
                 : null}
         </>
     ) : isShown ? (
@@ -207,20 +207,20 @@ const CoreItem = (props: {
             sx={nodeType === NodeType.NODE ? undefined : ParentItemSx}
         >
             {items
-                ? items.filter(v=>v).map((item) => (
-                      <CoreItem
-                          key={item[0]}
-                          item={item}
-                          displayCycles={true}
-                          showPrimaryFlag={props.showPrimaryFlag}
-                          leafType={props.leafType}
-                          editComponent={props.editComponent}
-                          pins={props.pins}
-                          onPin={props.onPin}
-                          hideNonPinned={props.hideNonPinned}
-                          active={props.active}
-                      />
-                  ))
+                ? items.filter(v => v).map((item) => (
+                    <CoreItem
+                        key={item[0]}
+                        item={item}
+                        displayCycles={true}
+                        showPrimaryFlag={props.showPrimaryFlag}
+                        leafType={props.leafType}
+                        editComponent={props.editComponent}
+                        pins={props.pins}
+                        onPin={props.onPin}
+                        hideNonPinned={props.hideNonPinned}
+                        active={props.active}
+                    />
+                ))
                 : null}
         </TreeItem>
     ) : null;
@@ -437,7 +437,7 @@ const CoreSelector = (props: CoreSelectorProps) => {
         if (coreChanged?.scenario) {
             const updateVar = getUpdateVar(updateVars, lovPropertyName);
             updateVar && dispatch(createRequestUpdateAction(id, module, [updateVar], true));
-    }
+        }
     }, [coreChanged, updateVars, module, dispatch, id, lovPropertyName]);
 
     const treeViewSx = useMemo(() => ({ ...BaseTreeViewSx, maxHeight: props.height || "50vh" }), [props.height]);
@@ -506,17 +506,17 @@ const CoreSelector = (props: CoreSelectorProps) => {
                 : undefined;
             return Array.isArray(res)
                 ? res.reduce((pv, [name, id, coltype, lov], idx) => {
-                      pv[name] = {
-                          dfid: id,
-                          title: name,
-                          type: coltype,
-                          index: idx,
-                          filter: true,
-                          lov: lov,
-                          freeLov: !!lov,
-                      };
-                      return pv;
-                  }, {} as Record<string, ColumnDesc>)
+                    pv[name] = {
+                        dfid: id,
+                        title: name,
+                        type: coltype,
+                        index: idx,
+                        filter: true,
+                        lov: lov,
+                        freeLov: !!lov,
+                    };
+                    return pv;
+                }, {} as Record<string, ColumnDesc>)
                 : undefined;
         } catch {
             return undefined;
@@ -557,9 +557,9 @@ const CoreSelector = (props: CoreSelectorProps) => {
             const res = props.sort ? (JSON.parse(props.sort) as Array<[string, string]>) : undefined;
             return Array.isArray(res)
                 ? res.reduce((pv, [name, id], idx) => {
-                      pv[name] = { dfid: id, title: name, type: "str", index: idx };
-                      return pv;
-                  }, {} as Record<string, ColumnDesc>)
+                    pv[name] = { dfid: id, title: name, type: "str", index: idx };
+                    return pv;
+                }, {} as Record<string, ColumnDesc>)
                 : undefined;
         } catch {
             return undefined;
@@ -626,6 +626,8 @@ const CoreSelector = (props: CoreSelectorProps) => {
                 {active && colFilters ? (
                     <Grid>
                         <TableFilter
+                            fieldHeader="Property"
+                            fieldHeaderTooltip="Select the property to filter"
                             columns={colFilters}
                             appliedFilters={filters}
                             filteredCount={0}
@@ -636,7 +638,14 @@ const CoreSelector = (props: CoreSelectorProps) => {
                 ) : null}
                 {active && colSorts ? (
                     <Grid>
-                        <TableSort columns={colSorts} appliedSorts={sorts} onValidate={applySorts} className={className}></TableSort>
+                        <TableSort
+                            fieldHeader="Property"
+                            fieldHeaderTooltip="Select the property to sort"
+                            columns={colSorts}
+                            appliedSorts={sorts}
+                            onValidate={applySorts}
+                            className={className}>
+                            </TableSort>
                     </Grid>
                 ) : null}
                 {showSearch ? (
@@ -691,21 +700,21 @@ const CoreSelector = (props: CoreSelectorProps) => {
             >
                 {foundEntities
                     ? foundEntities.map((item) =>
-                          item ? (
-                              <CoreItem
-                                  key={item[0]}
-                                  item={item}
-                                  displayCycles={displayCycles}
-                                  showPrimaryFlag={showPrimaryFlag}
-                                  leafType={leafType}
-                                  editComponent={props.editComponent}
-                                  onPin={showPins ? onPin : undefined}
-                                  pins={pins}
-                                  hideNonPinned={hideNonPinned}
-                                  active={!!active}
-                              />
-                          ) : null
-                      )
+                        item ? (
+                            <CoreItem
+                                key={item[0]}
+                                item={item}
+                                displayCycles={displayCycles}
+                                showPrimaryFlag={showPrimaryFlag}
+                                leafType={leafType}
+                                editComponent={props.editComponent}
+                                onPin={showPins ? onPin : undefined}
+                                pins={pins}
+                                hideNonPinned={hideNonPinned}
+                                active={!!active}
+                            />
+                        ) : null
+                    )
                     : null}
             </SimpleTreeView>
             {props.children}

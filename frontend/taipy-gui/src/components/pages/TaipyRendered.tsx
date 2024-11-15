@@ -11,19 +11,19 @@
  * specific language governing permissions and limitations under the License.
  */
 
-import React, { useEffect, useState, useContext, ComponentType } from "react";
+import React, { ComponentType, useContext, useEffect, useState } from "react";
 import axios from "axios";
+import { ErrorBoundary } from "react-error-boundary";
+import { Helmet } from "react-helmet-async";
 import JsxParser from "react-jsx-parser";
 import { useLocation } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
-import { ErrorBoundary } from "react-error-boundary";
 
 import { PageContext, TaipyContext } from "../../context/taipyContext";
-import { getRegisteredComponents } from "../Taipy";
-import { unregisteredRender, renderError } from "../Taipy/Unregistered";
 import { createPartialAction } from "../../context/taipyReducers";
-import ErrorFallback from "../../utils/ErrorBoundary";
 import { emptyArray, getBaseURL } from "../../utils";
+import ErrorFallback from "../../utils/ErrorBoundary";
+import { getRegisteredComponents } from "../Taipy";
+import { renderError, unregisteredRender } from "../Taipy/Unregistered";
 
 interface TaipyRenderedProps {
     path?: string;
@@ -95,7 +95,10 @@ const TaipyRendered = (props: TaipyRenderedProps) => {
                         setPageState({ module: result.data.context, jsx: result.data.jsx });
                     }
                     if (!fromBlock) {
-                        setStyle("Taipy_style", result.data.style || "");
+                        setStyle(
+                            path == "/TaiPy_root_page" ? "Taipy_root_style" : "Taipy_style",
+                            result.data.style || ""
+                        );
                         Array.isArray(result.data.head) && setHead(result.data.head);
                     }
                 })
